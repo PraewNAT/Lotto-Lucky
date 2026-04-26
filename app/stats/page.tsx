@@ -9,7 +9,12 @@ export const revalidate = 3600;
 
 export default async function StatsPage() {
   // 5 ปีย้อนหลัง = 5 × 24 งวด/ปี = 120 งวด (เผื่อเล็กน้อยเป็น 130)
-  const draws = await fetchHistory(130);
+  const all = await fetchHistory(130);
+  // ตัดข้อมูลปี พ.ศ. 2563 (ค.ศ. 2020) และก่อนหน้านั้นออก
+  const draws = all.filter((d) => {
+    const dt = new Date(d.date);
+    return !isNaN(dt.getTime()) && dt.getFullYear() >= 2021;
+  });
 
   return (
     <div className="space-y-8">
