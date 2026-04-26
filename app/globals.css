@@ -1,0 +1,81 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html, body {
+  background: #FBFBFD;
+  color: #08090A;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.005em;
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl border border-line bg-surface p-5 md:p-6;
+  }
+  .card-interactive {
+    @apply card transition hover:border-line-strong hover:-translate-y-px;
+  }
+
+  .btn {
+    @apply inline-flex h-9 items-center justify-center rounded-lg px-3.5 text-sm font-medium tracking-tight2 transition disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply btn bg-accent text-white hover:bg-accent-hover active:scale-[0.98];
+  }
+  .btn-secondary {
+    @apply btn bg-surface text-ink border border-line hover:bg-surface-2;
+  }
+  .btn-ghost {
+    @apply btn text-ink-2 hover:bg-surface-2;
+  }
+  .btn-lg {
+    @apply h-11 px-5 text-[15px];
+  }
+
+  .input {
+    @apply h-9 w-full rounded-lg border border-line-strong bg-surface px-3 text-sm text-ink placeholder-subtle focus:border-accent focus:outline-none focus:ring-0 focus:shadow-focus transition;
+  }
+  textarea.input {
+    @apply h-auto py-2.5 leading-relaxed;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[13px] font-medium transition cursor-pointer select-none;
+  }
+  .chip-on {
+    @apply border-accent bg-accent-soft text-accent-text;
+  }
+  .chip-off {
+    @apply border-line bg-surface text-ink-2 hover:bg-surface-2;
+  }
+
+  .eyebrow {
+    @apply text-[11px] font-medium uppercase tracking-[0.04em] text-muted;
+  }
+
+  .num-hero {
+    @apply font-mono text-[40px] md:text-[48px] font-medium leading-none tracking-[0.18em] text-ink;
+  }
+  .num-md {
+    @apply font-mono text-[22px] md:text-[24px] font-medium leading-none tracking-[0.16em] text-ink;
+  }
+  .num-sm {
+    @apply font-mono text-[15px] font-medium tracking-[0.12em] text-ink;
+  }
+
+  .table-row {
+    @apply border-b border-line-subtle last:border-b-0;
+  }
+}
+
+/* Subtle scrollbar to match minimal aesthetic */
+::-webkit-scrollbar { height: 8px; width: 8px; }
+::-webkit-scrollbar-thumb { background: #D0D2D8; border-radius: 999px; }
+::-webkit-scrollbar-track { background: transparent; }
