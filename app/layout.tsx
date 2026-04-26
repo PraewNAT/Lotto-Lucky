@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
-import { Inter, Prompt, JetBrains_Mono } from "next/font/google";
+import { Noto_Sans, Noto_Sans_Thai } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
-const prompt = Prompt({
-  weight: ["400", "500", "600"],
-  subsets: ["thai", "latin"],
-  variable: "--font-prompt",
+const notoSans = Noto_Sans({
+  weight: ["400", "500", "600", "700"],
+  subsets: ["latin"],
+  variable: "--font-sans",
   display: "swap",
 });
-const mono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono",
+const notoSansThai = Noto_Sans_Thai({
+  weight: ["400", "500", "600", "700"],
+  subsets: ["thai", "latin"],
+  variable: "--font-sans-thai",
   display: "swap",
 });
 
@@ -33,7 +33,7 @@ const NAV = [
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="th">
-      <body className={`${inter.variable} ${prompt.variable} ${mono.variable} font-sans`}>
+      <body className={`${notoSans.variable} ${notoSansThai.variable} font-sans`}>
         <header className="sticky top-0 z-30 border-b border-line bg-surface/80 backdrop-blur">
           <div className="mx-auto flex max-w-6xl items-center justify-between px-4 md:px-6 h-14">
             <Link href="/" className="flex items-center gap-2 group">

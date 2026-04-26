@@ -72,14 +72,14 @@ export default function Leaderboard({ draws }: Props) {
                       )}
                     </div>
                   </td>
-                  <td className="px-3.5 py-2.5 text-right font-mono text-ink-2">
+                  <td className="px-3.5 py-2.5 text-right font-mono text-[16px] font-semibold text-ink-2">
                     {r.hits2}/{r.total}
                   </td>
-                  <td className="px-3.5 py-2.5 text-right font-mono text-ink-2">
+                  <td className="px-3.5 py-2.5 text-right font-mono text-[16px] font-semibold text-ink-2">
                     {r.hits3}/{r.total}
                   </td>
                   <td className="px-3.5 py-2.5 text-right">
-                    <span className="font-mono font-medium text-ink">{acc}%</span>
+                    <span className="font-mono text-[18px] font-semibold text-ink">{acc}%</span>
                   </td>
                 </tr>
               );

@@ -334,14 +334,20 @@ export default function HeatMap({ draws }: Props) {
       </div>
 
       {active !== null && (
-        <div className="rounded-lg border border-line bg-surface-2 p-3.5 text-[13px]">
+        <div className="rounded-lg border border-line bg-surface-2 p-4 text-[14px]">
           <div className="flex items-center justify-between">
-            <span className="num-md">{fmtIdx(active)}</span>
+            <span className="font-mono text-[28px] font-semibold tracking-[0.1em] text-ink">
+              {fmtIdx(active)}
+            </span>
             <span className="text-muted">
-              ออก <strong className="text-ink">{freq[active]}</strong> ครั้ง
+              ออก{" "}
+              <strong className="font-mono text-[20px] font-semibold text-ink">
+                {freq[active]}
+              </strong>{" "}
+              ครั้ง
             </span>
           </div>
-          <div className="mt-1 text-[12px] text-muted">
+          <div className="mt-1.5 text-[13px] text-muted">
             งวดล่าสุดที่ออก: {lastSeen[active] || "ไม่พบในข้อมูล"}
           </div>
         </div>
@@ -428,20 +434,20 @@ function Grid2D({
             key={i}
             onClick={() => onSelect(i)}
             style={{ background: bg, opacity: dim ? 0.25 : 1 }}
-            className={`group relative aspect-square rounded-md text-[10px] transition hover:scale-[1.06] ${
+            className={`group relative flex aspect-square flex-col items-center justify-center rounded-md transition hover:scale-[1.06] ${
               isActive ? "ring-2 ring-accent ring-offset-1 ring-offset-surface" : ""
             }`}
           >
             <span
-              className={`block font-mono leading-tight ${
+              className={`block font-mono text-[18px] font-semibold leading-tight ${
                 useWhite ? "text-white" : "text-ink"
               }`}
             >
               {i.toString().padStart(2, "0")}
             </span>
             <span
-              className={`block font-mono text-[9px] leading-tight ${
-                useWhite ? "text-white/85" : "text-muted"
+              className={`block font-mono text-[13px] font-semibold leading-tight ${
+                useWhite ? "text-white" : "text-ink-2"
               }`}
             >
               {freq[i]}
@@ -487,13 +493,13 @@ function Grid3D({
                   onClick={() => onSelect(idx)}
                   style={{ background: bg, opacity: matches ? 1 : 0.25 }}
                   title={`${idx.toString().padStart(3, "0")} · ${freq[idx]} ครั้ง`}
-                  className={`group relative aspect-square rounded-md text-[10px] transition hover:scale-[1.06] ${
+                  className={`group relative flex aspect-square flex-col items-center justify-center rounded-md transition hover:scale-[1.06] ${
                     isActive ? "ring-2 ring-accent ring-offset-1 ring-offset-surface" : ""
                   }`}
                   aria-label={`${idx.toString().padStart(3, "0")} ออก ${freq[idx]} ครั้ง`}
                 >
                   <span
-                    className={`block font-mono leading-tight ${
+                    className={`block font-mono text-[15px] font-semibold leading-tight ${
                       useWhite ? "text-white" : "text-ink"
                     }`}
                   >
@@ -501,8 +507,8 @@ function Grid3D({
                     <span className="opacity-70">{trailing}</span>
                   </span>
                   <span
-                    className={`block font-mono text-[9px] leading-tight ${
-                      useWhite ? "text-white/85" : "text-muted"
+                    className={`block font-mono text-[11px] font-semibold leading-tight ${
+                      useWhite ? "text-white" : "text-ink-2"
                     }`}
                   >
                     {freq[idx]}
@@ -578,9 +584,9 @@ function SummaryTable({
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-line bg-surface p-3">
+    <div className="rounded-lg border border-line bg-surface p-3.5">
       <div className="eyebrow">{label}</div>
-      <div className="mt-1 text-[18px] font-semibold tracking-tight2 text-ink">{value}</div>
+      <div className="mt-1.5 font-mono text-[26px] font-semibold tracking-tight2 text-ink">{value}</div>
     </div>
   );
 }
@@ -604,7 +610,7 @@ function RankTable({
         <h5 className="text-[13px] font-semibold tracking-tight2 text-ink">{title}</h5>
         <span className="text-[11px] text-muted">{rows.length} อันดับ</span>
       </div>
-      <table className="w-full text-[13px]">
+      <table className="w-full text-[14px]">
         <thead>
           <tr className="border-b border-line-subtle">
             <th className="px-3.5 py-2 text-left font-medium text-muted text-[11px] uppercase tracking-[0.04em]">#</th>
@@ -618,12 +624,16 @@ function RankTable({
         <tbody>
           {rows.map((r, i) => (
             <tr key={r.idx} className="border-b border-line-subtle last:border-b-0">
-              <td className="px-3.5 py-2 text-muted">{i + 1}</td>
-              <td className="px-3.5 py-2">
-                <span className="num-sm">{r.idx.toString().padStart(pad, "0")}</span>
+              <td className="px-3.5 py-2.5 text-muted">{i + 1}</td>
+              <td className="px-3.5 py-2.5">
+                <span className="font-mono text-[20px] font-semibold tracking-[0.08em] text-ink">
+                  {r.idx.toString().padStart(pad, "0")}
+                </span>
               </td>
-              <td className="px-3.5 py-2 text-right font-mono">{r.count}</td>
-              <td className="px-3.5 py-2 text-right text-muted">
+              <td className="px-3.5 py-2.5 text-right font-mono text-[17px] font-semibold text-ink">
+                {r.count}
+              </td>
+              <td className="px-3.5 py-2.5 text-right text-muted">
                 {showGap
                   ? r.lastSeen || "—"
                   : totalDraws > 0

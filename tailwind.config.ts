@@ -31,8 +31,18 @@ const config: Config = {
         danger: { DEFAULT: "#D24A56", soft: "#FBE9EB" },
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "var(--font-prompt)", "system-ui", "sans-serif"],
-        mono: ["var(--font-mono)", "ui-monospace", "monospace"],
+        sans: [
+          "var(--font-sans)",
+          "var(--font-sans-thai)",
+          "system-ui",
+          "sans-serif",
+        ],
+        mono: [
+          "var(--font-sans)",
+          "var(--font-sans-thai)",
+          "system-ui",
+          "sans-serif",
+        ],
       },
       letterSpacing: {
         tight2: "-0.015em",

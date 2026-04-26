@@ -15,6 +15,13 @@ html, body {
   letter-spacing: -0.005em;
 }
 
+/* Use Noto Sans for numbers too (clean oval zero, no slash, no dot)
+   but keep tabular figures so columns align like a monospace font. */
+.font-mono {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
 @layer components {
   .card {
     @apply rounded-xl border border-line bg-surface p-5 md:p-6;
