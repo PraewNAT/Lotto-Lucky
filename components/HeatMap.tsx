@@ -48,16 +48,31 @@ function ymKey(year: number, month: number) {
   return year * 12 + month;
 }
 
-function matchesCountFilter(count: number, filter: number) {
-  if (filter === 0) return true;
-  if (filter === 5) return count >= 5;
-  return count === filter;
+/** filters: ชุดของค่าที่เลือก (1, 2, 3, 4, 5 = 5+). เซ็ตว่าง = แสดงทุกอัน */
+function matchesCountFilter(count: number, filters: Set<number>) {
+  if (filters.size === 0) return true;
+  if (filters.has(5) && count >= 5) return true;
+  return filters.has(count);
 }
 
 export default function HeatMap({ draws }: Props) {
   const [mode, setMode] = useState<HeatmapMode>("back2");
   const [active, setActive] = useState<number | null>(null);
-  const [countFilter, setCountFilter] = useState<number>(0);
+  const [countFilters, setCountFilters] = useState<Set<number>>(() => new Set());
+
+  function toggleCountFilter(value: number) {
+    setActive(null);
+    if (value === 0) {
+      setCountFilters(new Set()); // "ทั้งหมด" = clear
+      return;
+    }
+    setCountFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(value)) next.delete(value);
+      else next.add(value);
+      return next;
+    });
+  }
 
   // ค้นหาขอบเขตของข้อมูล + เดือนที่มีในแต่ละปี
   const { minYM, maxYM, availableYears, monthsByYear } = useMemo(() => {
@@ -136,22 +151,25 @@ export default function HeatMap({ draws }: Props) {
     return i.toString().padStart(config.pad, "0");
   }
 
-  function applyPreset(years: number) {
+  function applyPreset(preset: "all" | "thisYear" | number) {
     if (!maxYM) return;
     const toY = Math.floor(maxYM / 12);
     const toM = maxYM % 12;
     setToYear(toY);
     setToMonth(toM);
-    if (years === 0) {
-      // ทั้งหมด
+    if (preset === "all") {
       const fromY = minYM ? Math.floor(minYM / 12) : toY;
       const fromM = minYM ? minYM % 12 : 1;
       setFromYear(fromY);
       setFromMonth(fromM);
+    } else if (preset === "thisYear") {
+      // ม.ค. ของปีล่าสุด → เดือนล่าสุดของปีนั้น
+      setFromYear(toY);
+      setFromMonth(1);
     } else {
       // y ปีย้อนหลัง — เลื่อนกลับ years ปี
-      let fromMonthIdx = toM - 1; // 0-based
-      let fromYearVal = toY - years;
+      let fromMonthIdx = toM - 1;
+      let fromYearVal = toY - preset;
       if (fromMonthIdx < 0) { fromMonthIdx += 12; fromYearVal -= 1; }
       setFromYear(fromYearVal);
       setFromMonth(fromMonthIdx + 1);
@@ -199,13 +217,14 @@ export default function HeatMap({ draws }: Props) {
         <div className="flex flex-wrap items-center gap-2">
           <span className="eyebrow">ช่วงเวลา</span>
           <div className="flex flex-wrap gap-1">
-            {[
-              { key: 0, label: "ทั้งหมด" },
+            {([
+              { key: "all", label: "ทั้งหมด" },
               { key: 3, label: "3 ปี" },
               { key: 1, label: "1 ปี" },
-            ].map((p) => (
+              { key: "thisYear", label: "ปีนี้" },
+            ] as { key: "all" | "thisYear" | number; label: string }[]).map((p) => (
               <button
-                key={p.key}
+                key={String(p.key)}
                 onClick={() => { applyPreset(p.key); setActive(null); }}
                 className="rounded-full bg-surface-2 px-2.5 py-0.5 text-[11px] font-medium text-muted hover:bg-surface-2/70 hover:text-ink transition"
               >
@@ -254,19 +273,25 @@ export default function HeatMap({ draws }: Props) {
       <div className="flex flex-wrap items-center gap-2">
         <span className="eyebrow">ความถี่</span>
         <div className="flex flex-wrap gap-1">
-          {COUNT_FILTERS.map((cf) => (
-            <button
-              key={cf.value}
-              onClick={() => { setCountFilter(cf.value); setActive(null); }}
-              className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium transition ${
-                countFilter === cf.value
-                  ? "bg-accent text-white"
-                  : "bg-surface-2 text-muted hover:text-ink"
-              }`}
-            >
-              {cf.label}
-            </button>
-          ))}
+          {COUNT_FILTERS.map((cf) => {
+            const isAll = cf.value === 0;
+            const isSelected = isAll
+              ? countFilters.size === 0
+              : countFilters.has(cf.value);
+            return (
+              <button
+                key={cf.value}
+                onClick={() => toggleCountFilter(cf.value)}
+                className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium transition ${
+                  isSelected
+                    ? "bg-accent text-white"
+                    : "bg-surface-2 text-muted hover:text-ink"
+                }`}
+              >
+                {cf.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -275,14 +300,14 @@ export default function HeatMap({ draws }: Props) {
           freq={freq}
           active={active}
           onSelect={setActive}
-          countFilter={countFilter}
+          countFilters={countFilters}
         />
       ) : (
         <Grid3D
           freq={freq}
           active={active}
           onSelect={setActive}
-          countFilter={countFilter}
+          countFilters={countFilters}
         />
       )}
 
@@ -296,9 +321,14 @@ export default function HeatMap({ draws }: Props) {
             <span>{c.label}</span>
           </div>
         ))}
-        {countFilter !== 0 && (
+        {countFilters.size > 0 && (
           <span className="ml-auto text-accent">
-            แสดงเฉพาะเลขที่ออก {COUNT_FILTERS.find(c => c.value === countFilter)?.label}
+            แสดงเฉพาะ{" "}
+            {[...countFilters]
+              .sort((a, b) => a - b)
+              .map((v) => COUNT_FILTERS.find((c) => c.value === v)?.label)
+              .filter(Boolean)
+              .join(" / ")}
           </span>
         )}
       </div>
@@ -377,17 +407,17 @@ function Grid2D({
   freq,
   active,
   onSelect,
-  countFilter,
+  countFilters,
 }: {
   freq: number[];
   active: number | null;
   onSelect: (i: number) => void;
-  countFilter: number;
+  countFilters: Set<number>;
 }) {
   return (
     <div className="grid grid-cols-10 gap-1">
       {Array.from({ length: 100 }, (_, i) => {
-        const matches = matchesCountFilter(freq[i], countFilter);
+        const matches = matchesCountFilter(freq[i], countFilters);
         const c = colorForCount(freq[i]);
         const bg = matches ? c.bg : "rgba(244, 245, 248, 0.5)";
         const isActive = active === i;
@@ -427,12 +457,12 @@ function Grid3D({
   freq,
   active,
   onSelect,
-  countFilter,
+  countFilters,
 }: {
   freq: number[];
   active: number | null;
   onSelect: (i: number) => void;
-  countFilter: number;
+  countFilters: Set<number>;
 }) {
   return (
     <div className="space-y-3">
@@ -445,7 +475,7 @@ function Grid3D({
           <div className="grid grid-cols-10 gap-1">
             {Array.from({ length: 100 }, (_, j) => {
               const idx = lead * 100 + j;
-              const matches = matchesCountFilter(freq[idx], countFilter);
+              const matches = matchesCountFilter(freq[idx], countFilters);
               const c = colorForCount(freq[idx]);
               const bg = matches ? c.bg : "rgba(244, 245, 248, 0.5)";
               const isActive = active === idx;
