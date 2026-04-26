@@ -28,37 +28,21 @@ const COUNT_FILTERS = [
   { value: 5, label: "5+ ครั้ง" },
 ];
 
-// Multi-stop heatmap palette: cold → warm
-const COLOR_STOPS: [number, [number, number, number]][] = [
-  [0.0, [244, 246, 250]],   // ขาวเทา (ยังไม่เคยออก/น้อยมาก)
-  [0.15, [180, 210, 255]],  // ฟ้าอ่อน
-  [0.35, [110, 180, 230]],  // ฟ้า
-  [0.55, [120, 210, 160]],  // เขียว
-  [0.75, [255, 210, 90]],   // เหลือง
-  [0.9, [240, 140, 60]],    // ส้ม
-  [1.0, [220, 60, 70]],     // แดง
+// Discrete color scale ตามจำนวนครั้งที่ออก
+const COUNT_COLORS: { count: number; label: string; bg: string; whiteText: boolean }[] = [
+  { count: 0, label: "0 ครั้ง", bg: "rgb(244, 246, 250)", whiteText: false },
+  { count: 1, label: "1 ครั้ง", bg: "rgb(96, 165, 230)", whiteText: false },   // ฟ้า
+  { count: 2, label: "2 ครั้ง", bg: "rgb(86, 190, 130)", whiteText: false },   // เขียว
+  { count: 3, label: "3 ครั้ง", bg: "rgb(245, 200, 60)", whiteText: false },   // เหลือง
+  { count: 4, label: "4 ครั้ง", bg: "rgb(225, 75, 85)", whiteText: true },     // แดง
+  { count: 5, label: "5+ ครั้ง", bg: "rgb(140, 92, 60)", whiteText: true },    // น้ำตาล
 ];
 
-function lerpColor(t: number) {
-  const clamped = Math.max(0, Math.min(1, t));
-  for (let i = 1; i < COLOR_STOPS.length; i++) {
-    const [t1, c1] = COLOR_STOPS[i];
-    if (clamped <= t1) {
-      const [t0, c0] = COLOR_STOPS[i - 1];
-      const local = t1 === t0 ? 0 : (clamped - t0) / (t1 - t0);
-      const r = Math.round(c0[0] + (c1[0] - c0[0]) * local);
-      const g = Math.round(c0[1] + (c1[1] - c0[1]) * local);
-      const b = Math.round(c0[2] + (c1[2] - c0[2]) * local);
-      return `rgb(${r}, ${g}, ${b})`;
-    }
-  }
-  const last = COLOR_STOPS[COLOR_STOPS.length - 1][1];
-  return `rgb(${last[0]}, ${last[1]}, ${last[2]})`;
+function colorForCount(count: number) {
+  if (count <= 0) return COUNT_COLORS[0];
+  if (count >= 5) return COUNT_COLORS[5];
+  return COUNT_COLORS[count];
 }
-
-const LEGEND_GRADIENT = `linear-gradient(90deg, ${COLOR_STOPS.map(
-  ([pos, [r, g, b]]) => `rgb(${r}, ${g}, ${b}) ${pos * 100}%`
-).join(", ")})`;
 
 function ymKey(year: number, month: number) {
   return year * 12 + month;
@@ -130,7 +114,6 @@ export default function HeatMap({ draws }: Props) {
   const freq = mode === "back2" ? stats.back2Freq : mode === "front3" ? stats.front3Freq : stats.back3Freq;
   const lastSeen =
     mode === "back2" ? stats.back2LastSeen : mode === "front3" ? stats.front3LastSeen : stats.back3LastSeen;
-  const max = Math.max(...freq, 1);
 
   const ranking = useMemo(() => {
     return freq
@@ -290,7 +273,6 @@ export default function HeatMap({ draws }: Props) {
       {mode === "back2" ? (
         <Grid2D
           freq={freq}
-          max={max}
           active={active}
           onSelect={setActive}
           countFilter={countFilter}
@@ -298,20 +280,22 @@ export default function HeatMap({ draws }: Props) {
       ) : (
         <Grid3D
           freq={freq}
-          max={max}
           active={active}
           onSelect={setActive}
           countFilter={countFilter}
         />
       )}
 
-      <div className="flex items-center gap-3 text-[11px] text-muted">
-        <span>น้อย</span>
-        <div
-          className="h-1.5 w-40 rounded-full"
-          style={{ background: LEGEND_GRADIENT }}
-        />
-        <span>มาก</span>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] text-muted">
+        {COUNT_COLORS.map((c) => (
+          <div key={c.count} className="flex items-center gap-1.5">
+            <span
+              className="inline-block h-3 w-3 rounded-sm border border-line-subtle"
+              style={{ background: c.bg }}
+            />
+            <span>{c.label}</span>
+          </div>
+        ))}
         {countFilter !== 0 && (
           <span className="ml-auto text-accent">
             แสดงเฉพาะเลขที่ออก {COUNT_FILTERS.find(c => c.value === countFilter)?.label}
@@ -391,13 +375,11 @@ function MonthYearPicker({
 
 function Grid2D({
   freq,
-  max,
   active,
   onSelect,
   countFilter,
 }: {
   freq: number[];
-  max: number;
   active: number | null;
   onSelect: (i: number) => void;
   countFilter: number;
@@ -405,11 +387,12 @@ function Grid2D({
   return (
     <div className="grid grid-cols-10 gap-1">
       {Array.from({ length: 100 }, (_, i) => {
-        const t = freq[i] / max;
         const matches = matchesCountFilter(freq[i], countFilter);
-        const bg = matches ? lerpColor(t) : "rgba(244, 245, 248, 0.5)";
+        const c = colorForCount(freq[i]);
+        const bg = matches ? c.bg : "rgba(244, 245, 248, 0.5)";
         const isActive = active === i;
         const dim = !matches;
+        const useWhite = c.whiteText && matches;
         return (
           <button
             key={i}
@@ -421,14 +404,14 @@ function Grid2D({
           >
             <span
               className={`block font-mono leading-tight ${
-                t > 0.82 && matches ? "text-white" : "text-ink"
+                useWhite ? "text-white" : "text-ink"
               }`}
             >
               {i.toString().padStart(2, "0")}
             </span>
             <span
               className={`block font-mono text-[9px] leading-tight ${
-                t > 0.82 && matches ? "text-white/85" : "text-muted"
+                useWhite ? "text-white/85" : "text-muted"
               }`}
             >
               {freq[i]}
@@ -442,13 +425,11 @@ function Grid2D({
 
 function Grid3D({
   freq,
-  max,
   active,
   onSelect,
   countFilter,
 }: {
   freq: number[];
-  max: number;
   active: number | null;
   onSelect: (i: number) => void;
   countFilter: number;
@@ -464,12 +445,12 @@ function Grid3D({
           <div className="grid grid-cols-10 gap-1">
             {Array.from({ length: 100 }, (_, j) => {
               const idx = lead * 100 + j;
-              const t = freq[idx] / max;
               const matches = matchesCountFilter(freq[idx], countFilter);
-              const bg = matches ? lerpColor(t) : "rgba(244, 245, 248, 0.5)";
+              const c = colorForCount(freq[idx]);
+              const bg = matches ? c.bg : "rgba(244, 245, 248, 0.5)";
               const isActive = active === idx;
               const trailing = j.toString().padStart(2, "0");
-              const isWhiteText = t > 0.82 && matches;
+              const useWhite = c.whiteText && matches;
               return (
                 <button
                   key={idx}
@@ -483,7 +464,7 @@ function Grid3D({
                 >
                   <span
                     className={`block font-mono leading-tight ${
-                      isWhiteText ? "text-white" : "text-ink"
+                      useWhite ? "text-white" : "text-ink"
                     }`}
                   >
                     {lead}
@@ -491,7 +472,7 @@ function Grid3D({
                   </span>
                   <span
                     className={`block font-mono text-[9px] leading-tight ${
-                      isWhiteText ? "text-white/85" : "text-muted"
+                      useWhite ? "text-white/85" : "text-muted"
                     }`}
                   >
                     {freq[idx]}
