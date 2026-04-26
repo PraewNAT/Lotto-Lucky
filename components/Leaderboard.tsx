@@ -2,41 +2,90 @@
 
 import type { LottoDraw, Science } from "@/lib/types";
 import { SCIENCE_LABEL } from "@/lib/types";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 interface Props {
   draws: LottoDraw[];
 }
 
+type YearFilter = "all" | number;
+
 function pseudoAccuracy(draws: LottoDraw[], science: Science) {
-  const recent = draws.slice(0, 12);
   let hits2 = 0;
   let hits3 = 0;
-  for (const d of recent) {
+  for (const d of draws) {
     const seed = [...(d.date + science)].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
     const guess2 = (seed % 100).toString().padStart(2, "0");
     const guess3 = (Math.floor(seed / 100) % 1000).toString().padStart(3, "0");
     if (guess2 === d.prizes.back2) hits2++;
     if (d.prizes.back3.includes(guess3)) hits3++;
   }
-  return { hits2, hits3, total: recent.length };
+  return { hits2, hits3, total: draws.length };
 }
 
 export default function Leaderboard({ draws }: Props) {
+  // ปีที่มีข้อมูลจริง (พ.ศ.) เรียงจากใหม่ไปเก่า
+  const availableYears = useMemo(() => {
+    const set = new Set<number>();
+    for (const d of draws) {
+      const dt = new Date(d.date);
+      if (!isNaN(dt.getTime())) set.add(dt.getFullYear() + 543);
+    }
+    return Array.from(set).sort((a, b) => b - a);
+  }, [draws]);
+
+  const [year, setYear] = useState<YearFilter>("all");
+
+  const filteredDraws = useMemo(() => {
+    if (year === "all") return draws.slice(0, 12);
+    const targetYearCE = year - 543;
+    return draws.filter((d) => {
+      const dt = new Date(d.date);
+      return !isNaN(dt.getTime()) && dt.getFullYear() === targetYearCE;
+    });
+  }, [draws, year]);
+
   const rows = useMemo(() => {
     const entries: Science[] = ["math", "astro", "numero", "fengshui"];
-    const result = entries.map((s) => ({ science: s, ...pseudoAccuracy(draws, s) }));
+    const result = entries.map((s) => ({ science: s, ...pseudoAccuracy(filteredDraws, s) }));
     result.sort((a, b) => b.hits2 + b.hits3 - (a.hits2 + a.hits3));
     return result;
-  }, [draws]);
+  }, [filteredDraws]);
+
+  const subText =
+    year === "all"
+      ? `เปรียบเทียบจาก ${filteredDraws.length} งวดล่าสุด`
+      : `เปรียบเทียบจาก ${filteredDraws.length} งวดในปี ${year}`;
 
   return (
     <section className="card">
-      <div className="mb-4">
-        <h3 className="text-[16px] font-semibold tracking-tight2 text-ink">
-          ความแม่นแต่ละศาสตร์
-        </h3>
-        <p className="mt-0.5 text-[12px] text-muted">เปรียบเทียบจาก 12 งวดล่าสุด</p>
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="text-[16px] font-semibold tracking-tight2 text-ink">
+            ความแม่นแต่ละศาสตร์
+          </h3>
+          <p className="mt-0.5 text-[12px] text-muted">{subText}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="text-[12px] text-muted" htmlFor="leaderboard-year">
+            ปี
+          </label>
+          <select
+            id="leaderboard-year"
+            value={year}
+            onChange={(e) =>
+              setYear(e.target.value === "all" ? "all" : Number(e.target.value))
+            }
+            className="h-8 rounded-md border border-line bg-surface px-2 text-[13px] text-ink focus:border-accent focus:outline-none focus:shadow-focus"
+          >
+            <option value="all">ทั้งหมด (12 ล่าสุด)</option>
+            {availableYears.map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="rounded-lg border border-line">
