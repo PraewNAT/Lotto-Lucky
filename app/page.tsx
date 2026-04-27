@@ -21,7 +21,7 @@ function formatThaiDate(iso: string): string {
 export default function HomePage() {
   const [sciences, setSciences] = useState<Science[]>(["math"]);
   const [user, setUser] = useState<UserInput>({});
-  const [count, setCount] = useState(4);
+  const [count, setCount] = useState(6);
   const [sets, setSets] = useState<NumberSet[]>([]);
   const [latest, setLatest] = useState<LottoDraw | null>(null);
   const [loading, setLoading] = useState(false);
