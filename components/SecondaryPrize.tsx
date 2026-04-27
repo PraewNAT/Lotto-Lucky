@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { generateAndRank } from "@/lib/lottery";
-import type { NumberSet, Science, StatsSummary, UserInput } from "@/lib/types";
+import type { LottoDraw, NumberSet, Science, StatsSummary, UserInput } from "@/lib/types";
 
 interface PrizeBlock {
   label: string;
@@ -28,20 +28,27 @@ export default function SecondaryPrize() {
   async function generate() {
     setLoading(true);
     let stats: StatsSummary | undefined;
+    let draws: LottoDraw[] | undefined;
     try {
-      const r = await fetch("/api/lotto?mode=history&limit=24");
+      const ctl = new AbortController();
+      const timer = setTimeout(() => ctl.abort(), 30000);
+      const r = await fetch("/api/lotto?mode=history&limit=0&minYear=2550", {
+        signal: ctl.signal,
+      });
+      clearTimeout(timer);
       const j = await r.json();
       stats = j.stats;
+      draws = j.draws;
     } catch {}
     const next = PRIZES.map((p) => ({
       label: p.label,
       count: p.count,
-      sets: generateAndRank(Math.min(p.count, 5), sciences, user, stats),
+      sets: generateAndRank(Math.min(p.count, 5), sciences, user, stats, draws),
     }));
     setBlocks(next);
-    const front = generateAndRank(2, sciences, user, stats).map((s) => s.front3);
+    const front = generateAndRank(2, sciences, user, stats, draws).map((s) => s.front3);
     setBack3(front);
-    setBack2(generateAndRank(1, sciences, user, stats)[0].back2);
+    setBack2(generateAndRank(1, sciences, user, stats, draws)[0].back2);
     setLoading(false);
   }
 

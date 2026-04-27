@@ -1,6 +1,6 @@
 "use client";
 
-import type { NumberSet } from "@/lib/types";
+import type { NumberSet, NumberSetSignal } from "@/lib/types";
 import ScoreBar from "./ScoreBar";
 
 interface Props {
@@ -12,14 +12,37 @@ function chunk(num: string) {
   return num.replace(/(\d{2})(\d{2})(\d{2})/, "$1 $2 $3");
 }
 
+const TONE_CLASS: Record<NumberSetSignal["tone"], string> = {
+  positive: "bg-success-soft text-success",
+  warn: "bg-warning-soft text-warning",
+  neutral: "bg-surface-2 text-ink-2",
+};
+
+function SignalChip({ signal }: { signal: NumberSetSignal }) {
+  return (
+    <span
+      className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11.5px] font-medium ${TONE_CLASS[signal.tone]}`}
+    >
+      {signal.text}
+    </span>
+  );
+}
+
 export default function NumberSets({ sets, loadingReason }: Props) {
   if (sets.length === 0) return null;
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {sets.map((s, i) => (
         <article key={i} className="card-interactive space-y-5">
-          <header className="flex items-center justify-between">
-            <span className="eyebrow">ชุดที่ {i + 1}</span>
+          <header className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="eyebrow">ชุดที่ {i + 1}</span>
+              {s.highlight && (
+                <span className="inline-flex items-center rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-medium text-accent-text">
+                  ★ {s.highlight}
+                </span>
+              )}
+            </div>
             <span className="text-[11px] font-mono text-subtle">
               {Object.entries(s.breakdown)
                 .map(([k, v]) => `${k}·${Math.round(v)}`)
@@ -48,6 +71,14 @@ export default function NumberSets({ sets, loadingReason }: Props) {
           </div>
 
           <ScoreBar score={s.score} />
+
+          {s.signals && s.signals.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {s.signals.map((sig, idx) => (
+                <SignalChip key={idx} signal={sig} />
+              ))}
+            </div>
+          )}
 
           <p className="text-[13.5px] leading-relaxed text-ink-2">
             {loadingReason && !s.reason ? (

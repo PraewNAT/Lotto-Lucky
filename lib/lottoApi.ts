@@ -116,12 +116,29 @@ async function fetchInBatches(ids: string[], batchSize = 20): Promise<LottoDraw[
   return results;
 }
 
-/** limit = 0 หมายถึงดึงทุกงวดที่มีในระบบ */
-export async function fetchHistory(limit = 0): Promise<LottoDraw[]> {
+/** ดึงเฉพาะ ID ที่อยู่ในช่วงปี พ.ศ. ที่กำหนด (ID format: ddmmBBBB) */
+function filterIdsByMinBuddhistYear(ids: string[], minBuddhistYear: number): string[] {
+  return ids.filter((id) => {
+    const by = parseInt(id.slice(4, 8));
+    return !isNaN(by) && by >= minBuddhistYear;
+  });
+}
+
+/**
+ * limit  = 0  → ดึงทุกงวดที่มีในระบบ (หรือเฉพาะที่ผ่านตัวกรอง minYear)
+ * minYear (พ.ศ.) ใช้กรองเฉพาะงวดที่ปี ≥ ค่านี้ (เช่น 2550)
+ */
+export async function fetchHistory(
+  limit = 0,
+  minBuddhistYear?: number,
+): Promise<LottoDraw[]> {
   const latest = await fetchLatest();
   if (!latest) return limit > 0 ? mockDraws().slice(0, limit) : mockDraws();
 
-  const ids = await fetchAllIds(limit);
+  const requested = minBuddhistYear ? 0 : limit;
+  let ids = await fetchAllIds(requested);
+  if (minBuddhistYear) ids = filterIdsByMinBuddhistYear(ids, minBuddhistYear);
+
   if (ids.length === 0) {
     const filler = limit > 0 ? mockDraws().slice(1, limit) : mockDraws().slice(1);
     return [latest, ...filler];

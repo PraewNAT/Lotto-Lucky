@@ -3,31 +3,45 @@
 import { useState } from "react";
 import ScienceSelector from "@/components/ScienceSelector";
 import NumberSets from "@/components/NumberSets";
-import { Science, NumberSet, UserInput, StatsSummary } from "@/lib/types";
+import PredictionLog from "@/components/PredictionLog";
+import { Science, NumberSet, UserInput, StatsSummary, LottoDraw } from "@/lib/types";
 import { generateAndRank } from "@/lib/lottery";
+import { saveLog } from "@/lib/predictionLog";
+
+function formatThaiDate(iso: string): string {
+  const months = [
+    "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.",
+    "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค.",
+  ];
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear() + 543}`;
+}
 
 export default function HomePage() {
   const [sciences, setSciences] = useState<Science[]>(["math"]);
   const [user, setUser] = useState<UserInput>({});
   const [count, setCount] = useState(4);
   const [sets, setSets] = useState<NumberSet[]>([]);
+  const [latest, setLatest] = useState<LottoDraw | null>(null);
   const [loading, setLoading] = useState(false);
   const [reasoning, setReasoning] = useState(false);
+  const [logRefreshKey, setLogRefreshKey] = useState(0);
 
-  async function fetchStats(): Promise<StatsSummary | undefined> {
+  async function fetchHistoryAndStats(): Promise<{ stats?: StatsSummary; draws?: LottoDraw[] }> {
     try {
       const ctl = new AbortController();
-      const timer = setTimeout(() => ctl.abort(), 6000);
-      const r = await fetch("/api/lotto?mode=history&limit=24", {
+      const timer = setTimeout(() => ctl.abort(), 30000);
+      const r = await fetch("/api/lotto?mode=history&limit=0&minYear=2550", {
         cache: "no-store",
         signal: ctl.signal,
       });
       clearTimeout(timer);
-      if (!r.ok) return undefined;
+      if (!r.ok) return {};
       const j = await r.json();
-      return j.stats;
+      return { stats: j.stats, draws: j.draws };
     } catch {
-      return undefined;
+      return {};
     }
   }
 
@@ -56,10 +70,14 @@ export default function HomePage() {
     }
     setLoading(true);
     setSets([]);
-    const stats = await fetchStats();
-    const picked = generateAndRank(count, sciences, user, stats);
+    const { stats, draws } = await fetchHistoryAndStats();
+    const refDraw = draws && draws.length > 0 ? draws[0] : null;
+    setLatest(refDraw);
+    const picked = generateAndRank(count, sciences, user, stats, draws);
     setSets(picked);
     setLoading(false);
+    saveLog({ sciences, count, sets: picked, refDate: refDraw?.date });
+    setLogRefreshKey((k) => k + 1);
     void attachReasons(picked);
   }
 
@@ -110,7 +128,38 @@ export default function HomePage() {
         </button>
       </div>
 
+      {latest && sets.length > 0 && (
+        <section className="card flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="eyebrow">งวดล่าสุดที่ใช้อ้างอิง</div>
+            <div className="mt-0.5 text-[13.5px] text-ink-2">
+              {formatThaiDate(latest.date)}
+            </div>
+          </div>
+          <div className="flex flex-wrap items-end gap-4">
+            <div>
+              <div className="text-[10px] text-muted">รางวัลที่ 1</div>
+              <div className="num-md tracking-tight2">{latest.prizes.first || "—"}</div>
+            </div>
+            <div>
+              <div className="text-[10px] text-muted">3 ตัวหน้า</div>
+              <div className="num-sm">{latest.prizes.front3.join(" · ") || "—"}</div>
+            </div>
+            <div>
+              <div className="text-[10px] text-muted">3 ตัวหลัง</div>
+              <div className="num-sm">{latest.prizes.back3.join(" · ") || "—"}</div>
+            </div>
+            <div>
+              <div className="text-[10px] text-muted">2 ตัวท้าย</div>
+              <div className="num-md">{latest.prizes.back2 || "—"}</div>
+            </div>
+          </div>
+        </section>
+      )}
+
       <NumberSets sets={sets} loadingReason={reasoning} />
+
+      <PredictionLog refreshKey={logRefreshKey} />
     </div>
   );
 }

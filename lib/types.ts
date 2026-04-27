@@ -16,6 +16,12 @@ export interface UserInput {
   facingDirection?: string; // เหนือ ใต้ ตะวันออก ...
 }
 
+export interface NumberSetSignal {
+  kind: "gap" | "sum" | "parity" | "diversity" | "personal" | "freq";
+  tone: "positive" | "neutral" | "warn";
+  text: string;
+}
+
 export interface NumberSet {
   number: string;     // 6-digit string
   front3: string;
@@ -24,6 +30,8 @@ export interface NumberSet {
   score: number;      // 0–100
   breakdown: Record<string, number>;
   reason?: string;    // filled by AI; fallback otherwise
+  signals?: NumberSetSignal[]; // deterministic insights (gap, sum, personal, ...)
+  highlight?: string; // "เด่นด้านสมดุล" / "ห่างหายมากที่สุด" — at most one per set
 }
 
 export interface LottoDraw {

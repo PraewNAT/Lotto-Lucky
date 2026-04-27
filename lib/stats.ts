@@ -1,4 +1,5 @@
 import type { LottoDraw, StatsSummary } from "./types";
+import { runGA, type HistoryEntry } from "./lotteryGA";
 
 export function summarize(draws: LottoDraw[]): StatsSummary {
   const digitFreq = new Array(10).fill(0);
@@ -91,21 +92,49 @@ export function digitFreqByPosition(
 }
 
 export function predictNext(draws: LottoDraw[], count = 5): { number: string; confidence: number; reason: string }[] {
-  const summary = summarize(draws);
-  const total = summary.back2Freq.reduce((a, b) => a + b, 0) || 1;
-  const scored = summary.back2Freq.map((freq, idx) => {
-    const lastSeen = summary.back2LastSeen[idx];
-    const days = lastSeen ? (Date.now() - new Date(lastSeen).getTime()) / 86_400_000 : 9999;
-    const gap = Math.min(1, days / 365);
-    const rarity = 1 - freq / total * 100;
-    const score = (rarity * 0.4 + gap * 0.6) * 100;
-    return { idx, score };
+  const history: HistoryEntry[] = [];
+  for (const d of draws) {
+    if (!/^\d{2}$/.test(d.prizes.back2)) continue;
+    history.push({
+      digits: d.prizes.back2.split("").map(Number),
+      date: d.date,
+    });
+  }
+
+  // history น้อยเกินไป — fallback เป็น gap-based เดิมพอประมาณ
+  if (history.length < 5) {
+    const summary = summarize(draws);
+    const total = summary.back2Freq.reduce((a, b) => a + b, 0) || 1;
+    const scored = summary.back2Freq.map((freq, idx) => {
+      const lastSeen = summary.back2LastSeen[idx];
+      const days = lastSeen ? (Date.now() - new Date(lastSeen).getTime()) / 86_400_000 : 9999;
+      const gap = Math.min(1, days / 365);
+      const rarity = 1 - freq / total * 100;
+      const score = (rarity * 0.4 + gap * 0.6) * 100;
+      return { idx, score };
+    });
+    scored.sort((a, b) => b.score - a.score);
+    return scored.slice(0, count).map((s) => ({
+      number: s.idx.toString().padStart(2, "0"),
+      confidence: Math.round(Math.min(95, 35 + s.score * 0.5)),
+      reason: `ข้อมูลย้อนหลังยังน้อย — เลือกจากความห่างและความถี่`,
+    }));
+  }
+
+  const ga = runGA({
+    digitCount: 2,
+    history,
+    config: {
+      populationSize: 80,
+      generations: 50,
+      topResults: count,
+    },
   });
-  scored.sort((a, b) => b.score - a.score);
-  return scored.slice(0, count).map((s) => ({
-    number: s.idx.toString().padStart(2, "0"),
-    confidence: Math.round(Math.min(95, 35 + s.score * 0.5)),
-    reason: `เลข ${s.idx.toString().padStart(2, "0")} ห่างหายไปนาน และมีความถี่ต่ำกว่าค่าเฉลี่ย`,
+
+  return ga.recommendations.map((r) => ({
+    number: r.asString,
+    confidence: Math.round(Math.min(95, 35 + r.fitness * 60)),
+    reason: `วิวัฒนาการตามสถิติ ${history.length} งวด — fitness ${r.fitness.toFixed(2)} (ตำแหน่งหลัก, ผลรวม, สมดุลคู่/คี่, ความใหม่)`,
   }));
 }
 
