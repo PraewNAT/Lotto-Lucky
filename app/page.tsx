@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import ScienceSelector from "@/components/ScienceSelector";
 import NumberSets from "@/components/NumberSets";
 import PredictionLog from "@/components/PredictionLog";
+import Leaderboard from "@/components/Leaderboard";
 import { Science, NumberSet, UserInput, StatsSummary, LottoDraw } from "@/lib/types";
 import { generateAndRank } from "@/lib/lottery";
 import { saveLog } from "@/lib/predictionLog";
@@ -93,6 +95,17 @@ export default function HomePage() {
         </p>
       </section>
 
+      <div className="rounded-lg border border-line bg-surface-2 px-4 py-3 text-[12.5px] text-ink-2 flex flex-col sm:flex-row sm:items-center gap-1.5">
+        <span className="font-medium text-ink">หน้านี้แนะนำอะไร?</span>
+        <span className="text-muted">สุ่ม <strong className="text-ink-2">ชุดเลข 6 หลักครบทุกรางวัล</strong> — เลขท้าย 2 ตัวเป็นผลที่ตัดออกมาจาก 6 หลัก ถ้าอยากได้เลขท้าย 2 ตัวโดยเฉพาะ ดูได้ที่</span>
+        <Link
+          href="/stats#predict-back2"
+          className="text-accent hover:underline font-medium whitespace-nowrap"
+        >
+          หน้าสถิติ →
+        </Link>
+      </div>
+
       <ScienceSelector
         selected={sciences}
         onSelectedChange={setSciences}
@@ -160,6 +173,8 @@ export default function HomePage() {
       <NumberSets sets={sets} loadingReason={reasoning} />
 
       <PredictionLog refreshKey={logRefreshKey} />
+
+      <Leaderboard />
     </div>
   );
 }

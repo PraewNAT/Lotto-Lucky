@@ -56,9 +56,9 @@ export default function NumberSets({ sets, loadingReason }: Props) {
 
           <div className="grid grid-cols-3 gap-2">
             {[
-              { label: "3 ตัวหน้า", value: s.front3 },
-              { label: "3 ตัวหลัง", value: s.back3 },
-              { label: "2 ตัวท้าย", value: s.back2 },
+              { label: "3 ตัวหน้า", value: s.front3, note: undefined },
+              { label: "3 ตัวหลัง", value: s.back3, note: undefined },
+              { label: "2 ตัวท้าย", value: s.back2, note: "ตัดจาก 6 หลัก" },
             ].map((c) => (
               <div
                 key={c.label}
@@ -66,6 +66,9 @@ export default function NumberSets({ sets, loadingReason }: Props) {
               >
                 <div className="text-[10px] text-muted mb-1">{c.label}</div>
                 <div className="num-md">{c.value}</div>
+                {c.note && (
+                  <div className="text-[9px] text-subtle mt-0.5">{c.note}</div>
+                )}
               </div>
             ))}
           </div>

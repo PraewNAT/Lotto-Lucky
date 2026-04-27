@@ -3,6 +3,7 @@ import StatsChart from "@/components/StatsChart";
 import Predictor from "@/components/Predictor";
 import Leaderboard from "@/components/Leaderboard";
 import SameDayRepeats from "@/components/SameDayRepeats";
+import ScrollToHash from "@/components/ScrollToHash";
 import { fetchHistory } from "@/lib/lottoApi";
 
 export const metadata = { title: "สถิติ — Lotto Lucky" };
@@ -19,6 +20,7 @@ export default async function StatsPage() {
 
   return (
     <div className="space-y-8">
+      <ScrollToHash />
       <header className="space-y-2">
         <div className="eyebrow">สถิติ</div>
         <h1 className="text-3xl md:text-4xl font-semibold tracking-tight3 text-ink">
@@ -34,7 +36,9 @@ export default async function StatsPage() {
       <HeatMap draws={draws} />
       <StatsChart draws={draws} />
       <SameDayRepeats draws={allDraws} />
-      <Predictor draws={draws} latestDrawDate={draws[0]?.date} />
+      <div id="predict-back2" className="scroll-mt-28 md:scroll-mt-24">
+        <Predictor draws={draws} latestDrawDate={draws[0]?.date} />
+      </div>
       <Leaderboard />
     </div>
   );

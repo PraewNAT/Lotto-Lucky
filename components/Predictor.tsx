@@ -61,11 +61,17 @@ export default function Predictor({ draws, latestDrawDate }: Props) {
       <section className="card">
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h3 className="text-[16px] font-semibold tracking-tight2 text-ink">
-              ทำนายเลขท้าย 2 ตัวงวดหน้า
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-[16px] font-semibold tracking-tight2 text-ink">
+                ทำนายเลขท้าย 2 ตัวงวดหน้า
+              </h3>
+              <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[10px] font-medium text-accent-text">
+                เฉพาะ 2 ตัวท้าย
+              </span>
+            </div>
             <p className="mt-0.5 text-[12px] text-muted">
-              วิเคราะห์จากข้อมูลย้อนหลัง • เพื่อความบันเทิงเท่านั้น
+              วิเคราะห์ <strong className="text-ink-2">เฉพาะเลขท้าย 2 ตัวโดยตรง</strong> จาก {draws.length} งวดย้อนหลัง
+              โดยดูความถี่, เลขที่หายนาน, สมดุลคู่/คี่ — เหมาะถ้าเล่นเฉพาะ 2 ตัวท้าย
             </p>
           </div>
           <button onClick={savePrediction} className="btn-secondary">
