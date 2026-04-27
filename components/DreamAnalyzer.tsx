@@ -2,11 +2,17 @@
 
 import { useState } from "react";
 
+interface NumberOption {
+  n: string;
+  from: string;
+}
+
 interface Result {
   six: string;
-  three: string;
-  two: string;
-  symbols: { symbol: string; numbers: string; meaning: string }[];
+  sixFrom: string;
+  threeOptions: NumberOption[];
+  twoOptions: NumberOption[];
+  symbols: { symbol: string; numbers: string; meaning: string; source?: "dictionary" | "ai" }[];
   summary: string;
 }
 
@@ -64,19 +70,51 @@ export default function DreamAnalyzer() {
 
       {result && (
         <div className="space-y-4">
+          {/* 6-digit */}
           <div className="card space-y-4">
             <div className="text-center rounded-lg border border-line py-6">
               <div className="eyebrow mb-1.5">เลข 6 หลัก</div>
               <div className="num-hero">{result.six}</div>
+              {result.sixFrom && (
+                <p className="mt-2 text-[11.5px] text-muted">ถักจาก {result.sixFrom}</p>
+              )}
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-lg bg-surface-2 py-4 text-center">
-                <div className="eyebrow mb-1.5">3 หลัก</div>
-                <div className="num-md">{result.three}</div>
+
+            {/* 3-digit options */}
+            <div>
+              <div className="eyebrow mb-2">เลขท้าย 3 ตัว — ตัวเลือก</div>
+              <div className="flex flex-wrap gap-2">
+                {result.threeOptions.map((opt, i) => (
+                  <div key={i} className="flex flex-col items-center gap-0.5">
+                    <span
+                      className={`rounded-lg px-4 py-2.5 num-md ${
+                        i === 0 ? "bg-accent text-white" : "bg-surface-2 text-ink"
+                      }`}
+                    >
+                      {opt.n}
+                    </span>
+                    <span className="text-[10px] text-muted">{opt.from}</span>
+                  </div>
+                ))}
               </div>
-              <div className="rounded-lg bg-surface-2 py-4 text-center">
-                <div className="eyebrow mb-1.5">2 หลัก</div>
-                <div className="num-md">{result.two}</div>
+            </div>
+
+            {/* 2-digit options */}
+            <div>
+              <div className="eyebrow mb-2">เลขท้าย 2 ตัว — ตัวเลือก</div>
+              <div className="flex flex-wrap gap-2">
+                {result.twoOptions.map((opt, i) => (
+                  <div key={i} className="flex flex-col items-center gap-0.5">
+                    <span
+                      className={`rounded-lg px-5 py-2.5 num-md ${
+                        i === 0 ? "bg-accent text-white" : "bg-surface-2 text-ink"
+                      }`}
+                    >
+                      {opt.n}
+                    </span>
+                    <span className="text-[10px] text-muted">{opt.from}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -94,14 +132,28 @@ export default function DreamAnalyzer() {
               <ul className="divide-y divide-line-subtle">
                 {result.symbols.map((s, i) => (
                   <li key={i} className="py-3">
-                    <div className="flex items-center justify-between">
-                      <strong className="text-[14px] font-medium text-ink">{s.symbol}</strong>
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <strong className="text-[14px] font-medium text-ink">{s.symbol}</strong>
+                        <span
+                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10.5px] font-medium ${
+                            s.source === "dictionary"
+                              ? "bg-success-soft text-success"
+                              : "bg-surface-2 text-muted"
+                          }`}
+                        >
+                          {s.source === "dictionary" ? "ตำรา" : "AI ตีความ"}
+                        </span>
+                      </div>
                       <span className="num-sm text-accent-text">{s.numbers}</span>
                     </div>
                     <p className="mt-1 text-[13px] text-muted">{s.meaning}</p>
                   </li>
                 ))}
               </ul>
+              <p className="mt-3 text-[11.5px] text-muted">
+                * เลขจากตำราอ้างอิง: เลขนำโชคจากความฝัน, ทำนายฝันไขปริศนาเลขนำโชคพารวย, ปาฏิหาริย์บัตรเทวะ — เพื่อความบันเทิง
+              </p>
             </div>
           )}
         </div>

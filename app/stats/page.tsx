@@ -2,16 +2,17 @@ import HeatMap from "@/components/HeatMap";
 import StatsChart from "@/components/StatsChart";
 import Predictor from "@/components/Predictor";
 import Leaderboard from "@/components/Leaderboard";
+import SameDayRepeats from "@/components/SameDayRepeats";
 import { fetchHistory } from "@/lib/lottoApi";
 
 export const metadata = { title: "สถิติ — Lotto Lucky" };
 export const revalidate = 3600;
 
 export default async function StatsPage() {
-  // 5 ปีย้อนหลัง = 5 × 24 งวด/ปี = 120 งวด (เผื่อเล็กน้อยเป็น 130)
-  const all = await fetchHistory(130);
-  // ตัดข้อมูลปี พ.ศ. 2563 (ค.ศ. 2020) และก่อนหน้านั้นออก
-  const draws = all.filter((d) => {
+  // ดึงข้อมูลทั้งหมดตั้งแต่ พ.ศ. 2550 (~459 งวด) เพื่อใช้สำหรับวิเคราะห์ระยะยาว
+  const allDraws = await fetchHistory(0, 2550);
+  // สำหรับ component ส่วนใหญ่ ใช้แค่ข้อมูลตั้งแต่ ค.ศ. 2021 (เน้น short-term pattern)
+  const draws = allDraws.filter((d) => {
     const dt = new Date(d.date);
     return !isNaN(dt.getTime()) && dt.getFullYear() >= 2021;
   });
@@ -24,12 +25,15 @@ export default async function StatsPage() {
           สถิติ & Heatmap
         </h1>
         <p className="text-[14px] text-muted">
-          ข้อมูลจาก {draws.length} งวด • อัปเดตอัตโนมัติทุก 1 ชั่วโมง
+          ข้อมูลย้อนหลัง 5 ปี ({draws.length} งวด) สำหรับสถิติทั่วไป •
+          ข้อมูลทั้งหมด {allDraws.length} งวด สำหรับวิเคราะห์ระยะยาว •
+          อัปเดตอัตโนมัติทุก 1 ชั่วโมง
         </p>
       </header>
 
       <HeatMap draws={draws} />
       <StatsChart draws={draws} />
+      <SameDayRepeats draws={allDraws} />
       <Predictor draws={draws} latestDrawDate={draws[0]?.date} />
       <Leaderboard draws={draws} />
     </div>
