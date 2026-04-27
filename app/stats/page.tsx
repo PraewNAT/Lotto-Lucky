@@ -35,7 +35,7 @@ export default async function StatsPage() {
       <StatsChart draws={draws} />
       <SameDayRepeats draws={allDraws} />
       <Predictor draws={draws} latestDrawDate={draws[0]?.date} />
-      <Leaderboard draws={draws} />
+      <Leaderboard />
     </div>
   );
 }
