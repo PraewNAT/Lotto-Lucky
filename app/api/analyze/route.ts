@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { chatJSON } from "@/lib/anthropic";
 import { fallbackReason } from "@/lib/lottery";
+import { numerologyExplanation } from "@/lib/numerology";
 import type { NumberSet, Science, UserInput } from "@/lib/types";
 import { SCIENCE_LABEL } from "@/lib/types";
 import { fetchLatest } from "@/lib/lottoApi";
@@ -33,9 +34,13 @@ export async function POST(req: Request) {
       back3: s.back3,
       front3: s.front3,
       score: s.score,
+      // ใส่ hint ของเลขศาสตร์เฉพาะเมื่อผู้ใช้เลือก numero — ใช้เป็น grounding ให้ LLM
+      ...(body.sciences.includes("numero") && {
+        numerologyHint: numerologyExplanation(s.number, body.user),
+      }),
     })),
   };
-  const fb = { reasons: body.sets.map((s) => fallbackReason(s, body.sciences)) };
+  const fb = { reasons: body.sets.map((s) => fallbackReason(s, body.sciences, body.user)) };
   const result = await chatJSON<{ reasons: string[] }>(
     system,
     JSON.stringify(ctx, null, 2),

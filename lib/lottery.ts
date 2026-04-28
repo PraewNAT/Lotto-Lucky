@@ -7,7 +7,12 @@ import type {
   UserInput,
 } from "./types";
 import { astrologyScore } from "./astrology";
-import { numerologyScore } from "./numerology";
+import { numerologyScore, numerologyExplanation } from "./numerology";
+import {
+  isAuspiciousSum,
+  meaningOfTwoDigit,
+  kaalakiniForBirth,
+} from "./numerologyData";
 import { fengshuiScore } from "./fengshui";
 import { runGA, type HistoryEntry } from "./lotteryGA";
 
@@ -148,7 +153,14 @@ function computeSignals(
 
   // 2) Sum balance — ผลรวมหลัก (mean ของ 6 หลักคือ 27)
   const sum = digitSum(set.number);
-  if (Math.abs(sum - 27) <= 4) {
+  if (sciences.includes("numero") && isAuspiciousSum(sum)) {
+    // เลขศาสตร์: ผลรวมเป็นผลรวมมงคลโดยตรง — ใส่ชิปแยกที่หนักแน่นกว่า
+    signals.push({
+      kind: "sum",
+      tone: "positive",
+      text: `ผลรวมมงคล (${sum})`,
+    });
+  } else if (Math.abs(sum - 27) <= 4) {
     signals.push({
       kind: "sum",
       tone: "positive",
@@ -160,6 +172,27 @@ function computeSignals(
       tone: "warn",
       text: `ผลรวมหลักเอียง (${sum})`,
     });
+  }
+
+  // 2b) ความหมายของท้าย 2 ตัวตามตำราเลขศาสตร์ (เฉพาะเมื่อเลือก numero)
+  if (sciences.includes("numero")) {
+    const b2 = parseInt(set.back2, 10);
+    if (!isNaN(b2)) {
+      const m = meaningOfTwoDigit(b2);
+      if (m && m.tone === "auspicious") {
+        signals.push({
+          kind: "personal",
+          tone: "positive",
+          text: `ท้าย 2 (${set.back2}) ${m.short}`,
+        });
+      } else if (m && m.tone === "warn") {
+        signals.push({
+          kind: "personal",
+          tone: "warn",
+          text: `ท้าย 2 (${set.back2}) ${m.short}`,
+        });
+      }
+    }
   }
 
   // 3) Parity — สัดส่วนคู่/คี่
@@ -199,6 +232,20 @@ function computeSignals(
         tone: "positive",
         text: `เลขศาสตร์ตรงดวง (${Math.round(set.breakdown.numero)})`,
       });
+    }
+    // กาลกิณี — เตือนเมื่อใช้เลขห้ามถึง 2 ตัวขึ้นไป (เฉพาะเมื่อเลือก numero)
+    if (sciences.includes("numero")) {
+      const forbidden = kaalakiniForBirth(user.birthDate);
+      if (forbidden !== null) {
+        const k = set.number.split("").filter((d) => Number(d) === forbidden).length;
+        if (k >= 3) {
+          signals.push({
+            kind: "personal",
+            tone: "warn",
+            text: `เลขกาลกิณี (${forbidden}) ${k} ตัว`,
+          });
+        }
+      }
     }
     if (sciences.includes("astro") && (set.breakdown.astro ?? 0) >= 70) {
       signals.push({
@@ -348,11 +395,15 @@ export function generateAndRank(
   return top;
 }
 
-export function fallbackReason(set: NumberSet, sciences: Science[]): string {
+export function fallbackReason(
+  set: NumberSet,
+  sciences: Science[],
+  user: UserInput = {},
+): string {
   const parts: string[] = [];
   if (sciences.includes("math")) parts.push(`ผลรวมหลัก ${digitSum(set.number)} เข้าหลักความสมดุล`);
   if (sciences.includes("astro")) parts.push(`พลังของวันสนับสนุนเลขท้าย ${set.back2}`);
-  if (sciences.includes("numero")) parts.push(`เลขชะตาเลข ${reduceToSingle(digitSum(set.number))} เป็นเลขเด่น`);
+  if (sciences.includes("numero")) parts.push(numerologyExplanation(set.number, user));
   if (sciences.includes("fengshui")) parts.push(`ทิศและธาตุของคุณกลมกลืนกับชุดนี้`);
   if (parts.length === 0) parts.push("ชุดนี้มีโครงเลขที่สมดุลและน่าจับตามอง");
   return parts.join(" ") + ".";

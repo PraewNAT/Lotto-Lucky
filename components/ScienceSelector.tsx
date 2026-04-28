@@ -1,6 +1,12 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Science, SCIENCE_LABEL, UserInput } from "@/lib/types";
+import {
+  formatBirthDraftInput,
+  isoToDdMmYyyy,
+  parseDdMmYyyyToIso,
+} from "@/lib/birthDateInput";
 
 interface Props {
   selected: Science[];
@@ -10,6 +16,12 @@ interface Props {
 }
 
 export default function ScienceSelector({ selected, onSelectedChange, user, onUserChange }: Props) {
+  const [birthDraft, setBirthDraft] = useState(() => isoToDdMmYyyy(user.birthDate));
+
+  useEffect(() => {
+    setBirthDraft(isoToDdMmYyyy(user.birthDate));
+  }, [user.birthDate]);
+
   const toggle = (s: Science) => {
     onSelectedChange(selected.includes(s) ? selected.filter((x) => x !== s) : [...selected, s]);
   };
@@ -45,12 +57,36 @@ export default function ScienceSelector({ selected, onSelectedChange, user, onUs
         <div className="grid gap-3 md:grid-cols-2 pt-1">
           {needBirthDate && (
             <label className="block">
-              <span className="mb-1 block text-[12px] font-medium text-ink-2">วันเดือนปีเกิด</span>
+              <span className="mb-1 block text-[12px] font-medium text-ink-2">
+                วันเดือนปีเกิด{" "}
+                <span className="font-normal text-subtle">(ค.ศ. วว/ดด/ปปปป)</span>
+              </span>
               <input
-                type="date"
+                type="text"
+                inputMode="numeric"
                 className="input"
-                value={user.birthDate || ""}
-                onChange={(e) => set("birthDate", e.target.value)}
+                placeholder="เช่น 15/04/1995"
+                autoComplete="bday"
+                value={birthDraft}
+                onChange={(e) => {
+                  const formatted = formatBirthDraftInput(e.target.value);
+                  setBirthDraft(formatted);
+                  const iso = parseDdMmYyyyToIso(formatted);
+                  if (iso) set("birthDate", iso);
+                  else if (!formatted.replace(/\D/g, "").length) set("birthDate", undefined);
+                }}
+                onBlur={() => {
+                  const iso = parseDdMmYyyyToIso(birthDraft);
+                  if (iso) {
+                    set("birthDate", iso);
+                    setBirthDraft(isoToDdMmYyyy(iso));
+                  } else if (!birthDraft.trim()) {
+                    set("birthDate", undefined);
+                    setBirthDraft("");
+                  } else {
+                    setBirthDraft(isoToDdMmYyyy(user.birthDate));
+                  }
+                }}
               />
             </label>
           )}
