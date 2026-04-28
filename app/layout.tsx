@@ -22,7 +22,8 @@ export const metadata: Metadata = {
 };
 
 const NAV = [
-  { href: "/", label: "สุ่มเลข" },
+  { href: "/", label: "ทำนายงวดถัดไป" },
+  { href: "/random", label: "สุ่มเลข" },
   { href: "/secondary", label: "รางวัลรอง" },
   { href: "/dream", label: "ทำนายฝัน" },
   { href: "/horoscope", label: "ดวงรายวัน" },

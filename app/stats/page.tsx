@@ -1,6 +1,5 @@
 import HeatMap from "@/components/HeatMap";
 import StatsChart from "@/components/StatsChart";
-import Predictor from "@/components/Predictor";
 import Leaderboard from "@/components/Leaderboard";
 import SameDayRepeats from "@/components/SameDayRepeats";
 import ScrollToHash from "@/components/ScrollToHash";
@@ -36,9 +35,6 @@ export default async function StatsPage() {
       <HeatMap draws={draws} />
       <StatsChart draws={draws} />
       <SameDayRepeats draws={allDraws} />
-      <div id="predict-back2" className="scroll-mt-28 md:scroll-mt-24">
-        <Predictor draws={draws} latestDrawDate={draws[0]?.date} />
-      </div>
       <Leaderboard />
     </div>
   );
