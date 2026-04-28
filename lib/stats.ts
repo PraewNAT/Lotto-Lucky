@@ -91,50 +91,88 @@ export function digitFreqByPosition(
   return freq;
 }
 
-export function predictNext(draws: LottoDraw[], count = 5): { number: string; confidence: number; reason: string }[] {
+export type PredictKind = "back2" | "front3" | "back3";
+
+export interface Prediction {
+  number: string;
+  confidence: number;
+  reason: string;
+}
+
+/**
+ * ทำนายเลขงวดหน้าสำหรับตำแหน่งใดตำแหน่งหนึ่ง:
+ *   - back2  — เลขท้าย 2 ตัว (1 ค่าต่องวด)
+ *   - front3 — 3 ตัวหน้า (2 ค่าต่องวด)
+ *   - back3  — 3 ตัวหลัง (2 ค่าต่องวด)
+ *
+ * ใช้ GA วิวัฒนาการเป็นหลัก, fallback เป็น gap+rarity เมื่อข้อมูลน้อยกว่า 5 entries
+ */
+export function predictNext(
+  draws: LottoDraw[],
+  count = 5,
+  kind: PredictKind = "back2",
+): Prediction[] {
+  const digitCount = kind === "back2" ? 2 : 3;
   const history: HistoryEntry[] = [];
   for (const d of draws) {
-    if (!/^\d{2}$/.test(d.prizes.back2)) continue;
-    history.push({
-      digits: d.prizes.back2.split("").map(Number),
-      date: d.date,
-    });
+    if (kind === "back2") {
+      if (!/^\d{2}$/.test(d.prizes.back2)) continue;
+      history.push({ digits: d.prizes.back2.split("").map(Number), date: d.date });
+    } else {
+      const arr = kind === "front3" ? d.prizes.front3 : d.prizes.back3;
+      for (const n of arr) {
+        if (!/^\d{3}$/.test(n)) continue;
+        history.push({ digits: n.split("").map(Number), date: d.date });
+      }
+    }
   }
 
-  // history น้อยเกินไป — fallback เป็น gap-based เดิมพอประมาณ
+  // history น้อยเกินไป — fallback เป็น gap-based
   if (history.length < 5) {
     const summary = summarize(draws);
-    const total = summary.back2Freq.reduce((a, b) => a + b, 0) || 1;
-    const scored = summary.back2Freq.map((freq, idx) => {
-      const lastSeen = summary.back2LastSeen[idx];
+    const freqArr =
+      kind === "back2" ? summary.back2Freq
+      : kind === "front3" ? summary.front3Freq
+      : summary.back3Freq;
+    const lastSeenArr =
+      kind === "back2" ? summary.back2LastSeen
+      : kind === "front3" ? summary.front3LastSeen
+      : summary.back3LastSeen;
+
+    const total = freqArr.reduce((a, b) => a + b, 0) || 1;
+    const scored = freqArr.map((freq, idx) => {
+      const lastSeen = lastSeenArr[idx];
       const days = lastSeen ? (Date.now() - new Date(lastSeen).getTime()) / 86_400_000 : 9999;
       const gap = Math.min(1, days / 365);
-      const rarity = 1 - freq / total * 100;
+      const rarity = 1 - (freq / total) * (kind === "back2" ? 100 : 1000);
       const score = (rarity * 0.4 + gap * 0.6) * 100;
       return { idx, score };
     });
     scored.sort((a, b) => b.score - a.score);
     return scored.slice(0, count).map((s) => ({
-      number: s.idx.toString().padStart(2, "0"),
+      number: s.idx.toString().padStart(digitCount, "0"),
       confidence: Math.round(Math.min(95, 35 + s.score * 0.5)),
       reason: `ข้อมูลย้อนหลังยังน้อย — เลือกจากความห่างและความถี่`,
     }));
   }
 
   const ga = runGA({
-    digitCount: 2,
+    digitCount,
     history,
     config: {
-      populationSize: 80,
-      generations: 50,
+      populationSize: kind === "back2" ? 80 : 120,
+      generations: kind === "back2" ? 50 : 60,
       topResults: count,
     },
   });
 
+  const positionLabel =
+    kind === "back2" ? "ท้าย 2 ตัว" : kind === "front3" ? "3 ตัวหน้า" : "3 ตัวหลัง";
+
   return ga.recommendations.map((r) => ({
     number: r.asString,
     confidence: Math.round(Math.min(95, 35 + r.fitness * 60)),
-    reason: `วิวัฒนาการตามสถิติ ${history.length} งวด — fitness ${r.fitness.toFixed(2)} (ตำแหน่งหลัก, ผลรวม, สมดุลคู่/คี่, ความใหม่)`,
+    reason: `วิวัฒนาการ ${positionLabel} จากสถิติ ${history.length} entry — fitness ${r.fitness.toFixed(2)} (ตำแหน่งหลัก, ผลรวม, สมดุลคู่/คี่, ความใหม่)`,
   }));
 }
 
